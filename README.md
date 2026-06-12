@@ -5,7 +5,7 @@ Proyecto académico de la UTN FRLP que desarrolla un agente para automatizar la 
 ## Integrantes:
 
 - Emiliano Di Grappa
-- Federico Blanco Caballero
+- Federico Blanco Cavallero
 - Francisco Garcia
 - Jano Stratakis
 - Maximo Preneste
