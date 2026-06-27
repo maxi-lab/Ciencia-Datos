@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
-import { Field, Alert, FileDrop, SectionCard } from "./UI";
+import { Field, Alert, FileDrop, SectionCard } from "../components/UI";
+
 
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState([]);
