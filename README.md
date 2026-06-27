@@ -1,17 +1,4 @@
-<<<<<<< HEAD
-# Trabajo integrador de ciencias de datos
 
-Proyecto académico de la UTN FRLP que desarrolla un agente para automatizar la contratación de personas.
-
-## Integrantes:
-
-- Emiliano Di Grappa
-- Federico Blanco Cavallero
-- Francisco Garcia
-- Jano Stratakis
-- Maximo Preneste
-- Santiago Montanari
-=======
 # ActionPlan AI — Employee RAG
 
 Genera planes de acción personalizados para empleados usando RAG sobre políticas de empresa.
@@ -138,4 +125,3 @@ POST /employees/ingest               Guarda un perfil individual
 POST /employees/bulk-ingest          Carga masiva (desde dataset)
 GET  /employees/             Lista empleados guardados
 ```
->>>>>>> 2ff1bdbe1ede318d2c2dbfa1adf526bf85401d0b
