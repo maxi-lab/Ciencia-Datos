@@ -242,7 +242,7 @@ export default function ActionPlanPage() {
                   id="performance_rating"
                   value={form.performance_rating}
                   onChange={v => set("performance_rating", v)}
-                  options={[{ v: 3, label: "3 – Bueno" }, { v: 4, label: "4 – Excelente" }]}
+                  options={[{ v: 1, label: "1 – Bajo" }, { v: 2, label: "2 – Bueno" },{ v: 3, label: "3 – Excelente" }, { v: 4, label: "4 – Sobresaliente" }]}
                 />
               </Field>
               <Field label="Stock options (nivel 0–3)">
