@@ -49,7 +49,7 @@ employee-rag/
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate        # source venv/Scripts/activate
 pip install -r requirements.txt
 
 cp .env.example .env
