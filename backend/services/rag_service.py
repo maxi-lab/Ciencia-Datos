@@ -12,6 +12,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
+from .judge_service import validate_action_plan
 
 from config import settings
 from models import EmployeeProfile
@@ -199,7 +200,8 @@ def generate_action_plan(profile: EmployeeProfile) -> dict:
         "policies_context": policies_context,
         "employee_profile": full_profile,
     })
-
+    validated_plan = validate_action_plan(response.content, policies_context)
+    print("Validated plan:", validated_plan)
     return {
         "plan": response.content,
         "policies_used": len(policy_docs),

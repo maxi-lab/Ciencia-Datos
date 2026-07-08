@@ -1,5 +1,6 @@
-from pydantic import BaseModel
-from typing import Optional, Literal
+from pydantic import BaseModel, Field
+from typing import Optional, Literal, List
+from enum import Enum
 
 
 SATISFACTION_LABELS = {1: "Muy bajo/a", 2: "Bajo/a", 3: "Alto/a", 4: "Muy alto/a"}
@@ -125,3 +126,16 @@ class PolicyTextRequest(BaseModel):
 class BulkIngestRequest(BaseModel):
     """Para carga masiva desde dataset procesado."""
     employees: list[EmployeeProfile]
+class Severidad(str, Enum):
+    CRITICO = "critico"      # bloquea la aprobación
+    MENOR = "menor"          # sugerencia, no bloquea
+
+class Correccion(BaseModel):
+    criterio: str = Field(description="Criterio que falló: politicas | alucinacion | tono | smart")
+    severidad: Severidad
+    problema: str = Field(description="Qué está mal, citando la parte exacta del plan")
+    fix_sugerido: str = Field(description="Reescritura o instrucción concreta para corregirlo")
+
+class ValidacionPlan(BaseModel):
+    aprobado: bool = Field(description="True SOLO si no hay correcciones con severidad 'critico'")
+    correcciones: List[Correccion] = Field(default_factory=list)
