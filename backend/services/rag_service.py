@@ -200,11 +200,55 @@ def generate_action_plan(profile: EmployeeProfile) -> dict:
         "policies_context": policies_context,
         "employee_profile": full_profile,
     })
-    validated_plan = validate_action_plan(response.content, policies_context)
-    print("Validated plan:", validated_plan)
+    # 4. Loop de validación + corrección
+    historial_validacion = []
+    validacion = None
+    plan_content = response.content 
+    for intento in range(1, 4):
+        validacion = validate_action_plan(plan_content, policies_context)
+        historial_validacion.append({
+            "intento": intento,
+            "aprobado": validacion.aprobado,
+            "correcciones": [c.model_dump() for c in validacion.correcciones],
+        })
+
+        if validacion.aprobado:
+            print(f"Plan aprobado en el intento {intento}.\n")
+            print(f"Historial de validación: {historial_validacion}\n")
+            print(f"Plan final:\n{plan_content}")
+            break
+        else:
+            print(f"Plan NO aprobado {plan_content}.\n")
+            print(f"Correcciones: {validacion.correcciones}\n")
+            print(f"Plan NO aprobado en el intento {intento}.\n")    
+        criticas = [c for c in validacion.correcciones if c.severidad.value == "critico"]
+        plan_content = _corregir_plan(plan_content, criticas, policies_context)
     return {
-        "plan": response.content,
+        "plan": plan_content,
         "policies_used": len(policy_docs),
         "employee_id": profile.employee_id,
         "employee_name": profile.employee_name,
     }
+def _corregir_plan(plan_content: str, correcciones, policies_context: str) -> str:
+    """Reescribe el plan corrigiendo únicamente los problemas críticos señalados."""
+    problemas_texto = "\n".join(
+        f"- [{c.criterio}] {c.problema} → Sugerencia: {c.fix_sugerido}"
+        for c in correcciones
+    )
+    correction_prompt = f"""
+Reescribe el siguiente plan de acción de RRHH corrigiendo ÚNICAMENTE los problemas
+listados abajo. No cambies nada que no esté relacionado con estos problemas.
+No inventes datos que no estén en las POLÍTICAS provistas.
+
+PLAN ORIGINAL:
+{plan_content}
+
+PROBLEMAS A CORREGIR:
+{problemas_texto}
+
+POLÍTICAS (fuente de verdad):
+{policies_context}
+
+Devuelve el plan corregido completo, con las mismas secciones, sin explicaciones adicionales.
+"""
+    return llm.invoke(correction_prompt).content
