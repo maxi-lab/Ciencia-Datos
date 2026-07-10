@@ -139,3 +139,9 @@ class Correccion(BaseModel):
 class ValidacionPlan(BaseModel):
     aprobado: bool = Field(description="True SOLO si no hay correcciones con severidad 'critico'")
     correcciones: List[Correccion] = Field(default_factory=list)
+
+
+class RelevanciaChunk(BaseModel):
+    chunk_index: int
+    relevante: bool
+    justificacion: str

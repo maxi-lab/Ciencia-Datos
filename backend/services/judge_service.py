@@ -1,6 +1,7 @@
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from config import settings
-from models import Severidad, Correccion, ValidacionPlan
+from models import Severidad, Correccion, ValidacionPlan, RelevanciaChunk
+import json
 
 PROMPT = """
 Eres un auditor estricto de RRHH. Tu tarea es validar el plan de acción generado.
@@ -102,3 +103,39 @@ def validate_action_plan(plan_content: str, context: str) -> ValidacionPlan:
     prompt = PROMPT.format(context=context, plan_content=plan_content)
     resultado: ValidacionPlan = llm_judge.invoke(prompt)
     return normalizar_aprobacion(resultado)
+
+#a nivel de diseño, tendria que ser otro modelo a parte.
+
+def evaluar_relevancia_chunks(profile_text: str, chunks: list[str]) -> list[RelevanciaChunk]:
+    fragmentos_str = "\n\n".join(f"[{i}] {c}" for i, c in enumerate(chunks))
+
+    prompt = f"""
+Sos un evaluador experto en RRHH. Te paso el perfil de un empleado y una lista
+de fragmentos de políticas recuperados por un sistema de búsqueda semántica.
+
+Para cada fragmento, decidí si es RELEVANTE (aporta información aplicable para
+generar un plan de acción para ESTE empleado en particular) o NO relevante
+(genérico, no aplica a su situación, ruido).
+
+PERFIL DEL EMPLEADO:
+{profile_text}
+
+FRAGMENTOS RECUPERADOS:
+{fragmentos_str}
+
+Devolvé SOLO un JSON válido, sin texto adicional, con esta forma exacta:
+[
+  {{"chunk_index": 0, "relevante": true, "justificacion": "..."}},
+  {{"chunk_index": 1, "relevante": false, "justificacion": "..."}}
+]
+"""
+    response = llm.invoke(prompt)
+    content = response.content.strip()
+
+    # Por si el modelo devuelve con ```json ... ```
+    if content.startswith("```"):
+        content = content.strip("`")
+        content = content.replace("json\n", "", 1) if content.startswith("json") else content
+
+    data = json.loads(content)
+    return [RelevanciaChunk(**item) for item in data]

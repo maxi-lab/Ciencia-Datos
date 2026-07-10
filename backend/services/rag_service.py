@@ -12,7 +12,8 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
-from .judge_service import validate_action_plan
+from .judge_service import validate_action_plan, RelevanciaChunk, evaluar_relevancia_chunks
+from .log_service import log_retrieval
 
 from config import settings
 from models import EmployeeProfile
@@ -172,6 +173,13 @@ def generate_action_plan(profile: EmployeeProfile) -> dict:
     policy_docs: list[Document] = policy_db.as_retriever(
         search_kwargs={"k": 6}
     ).invoke(profile_text)
+    metricas_retrieval = _calcular_precision(profile_text, policy_docs)
+    log_retrieval(
+    query=profile_text,
+    employee_id=profile.employee_id,
+    retrieved=[d.metadata.get("source") for d in policy_docs],
+    metricas=metricas_retrieval,
+    )
 
     policies_context = "\n\n---\n\n".join(d.page_content for d in policy_docs)
     if not policies_context.strip():
@@ -228,6 +236,7 @@ def generate_action_plan(profile: EmployeeProfile) -> dict:
         "policies_used": len(policy_docs),
         "employee_id": profile.employee_id,
         "employee_name": profile.employee_name,
+        "metricas_retrieval": metricas_retrieval,
     }
 def _corregir_plan(plan_content: str, correcciones, policies_context: str) -> str:
     """Reescribe el plan corrigiendo únicamente los problemas críticos señalados."""
@@ -252,3 +261,18 @@ POLÍTICAS (fuente de verdad):
 Devuelve el plan corregido completo, con las mismas secciones, sin explicaciones adicionales.
 """
     return llm.invoke(correction_prompt).content
+
+def _calcular_precision(profile_text: str, policy_docs: list[Document]) -> dict:
+    chunks_text = [d.page_content for d in policy_docs]
+    evaluaciones = evaluar_relevancia_chunks(profile_text, chunks_text)
+
+    relevantes = sum(1 for e in evaluaciones if e.relevante)
+    total = len(evaluaciones)
+    precision = relevantes / total if total > 0 else 0.0
+
+    return {
+        "precision_at_k": round(precision, 3),
+        "relevantes": relevantes,
+        "total_recuperados": total,
+        "detalle": [e.model_dump() for e in evaluaciones],
+    }
