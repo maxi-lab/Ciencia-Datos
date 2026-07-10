@@ -23,7 +23,7 @@ embeddings = OpenAIEmbeddings(
 )
 
 llm = ChatOpenAI(
-    model=settings.openai_model,
+    model=settings.rag_model,
     openai_api_key=settings.openai_api_key,
     temperature=0.3,
 )
