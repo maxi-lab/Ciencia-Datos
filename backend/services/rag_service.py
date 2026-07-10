@@ -8,23 +8,25 @@ Colecciones ChromaDB:
 
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+#from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
 from .judge_service import validate_action_plan
+from langchain_ollama import ChatOllama
+from langchain_ollama import OllamaEmbeddings
 
 from config import settings
 from models import EmployeeProfile
 
-embeddings = OpenAIEmbeddings(
+embeddings = OllamaEmbeddings(
     model=settings.embedding_model,
-    openai_api_key=settings.openai_api_key,
+    base_url=settings.ollama_url,
 )
 
-llm = ChatOpenAI(
+llm = ChatOllama(
     model=settings.rag_model,
-    openai_api_key=settings.openai_api_key,
+    base_url=settings.ollama_url,
     temperature=0.3,
 )
 
