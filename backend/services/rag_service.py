@@ -174,11 +174,14 @@ def generate_action_plan(profile: EmployeeProfile) -> dict:
         search_kwargs={"k": 6}
     ).invoke(profile_text)
     metricas_retrieval = _calcular_precision(profile_text, policy_docs)
+    metricas_recall = _calcular_recall_por_documento(profile_text, policy_docs)
+    print(f"Metricas de retrieval: {metricas_recall}")
     log_retrieval(
     query=profile_text,
     employee_id=profile.employee_id,
     retrieved=[d.metadata.get("source") for d in policy_docs],
     metricas=metricas_retrieval,
+    metricas_recall=metricas_recall
     )
 
     policies_context = "\n\n---\n\n".join(d.page_content for d in policy_docs)
@@ -275,4 +278,36 @@ def _calcular_precision(profile_text: str, policy_docs: list[Document]) -> dict:
         "relevantes": relevantes,
         "total_recuperados": total,
         "detalle": [e.model_dump() for e in evaluaciones],
+    }
+def _calcular_recall_por_documento(profile_text: str, policy_docs_recuperados: list[Document]) -> dict:
+    policy_db = _col("policies")
+    todos = policy_db.get(include=["metadatas", "documents"])
+    todos_chunks = todos["documents"]
+    todos_metadatas = todos["metadatas"]
+
+    if not todos_chunks:
+        return {"recall_at_k": None, "total_relevantes_en_bd": 0, "relevantes_recuperados": 0}
+
+    evaluaciones = evaluar_relevancia_chunks(profile_text, todos_chunks)
+
+    # Documento es relevante si AL MENOS UN chunk de ese documento es relevante
+    docs_relevantes = {
+        todos_metadatas[e.chunk_index].get("source")
+        for e in evaluaciones if e.relevante
+    }
+
+    docs_recuperados = {
+        d.metadata.get("source") for d in policy_docs_recuperados
+    }
+
+    relevantes_recuperados = docs_relevantes & docs_recuperados
+    total_relevantes = len(docs_relevantes)
+
+    recall = len(relevantes_recuperados) / total_relevantes if total_relevantes > 0 else None
+
+    return {
+        "recall_at_k": round(recall, 3) if recall is not None else None,
+        "total_relevantes_en_bd": total_relevantes,      # ahora máximo 10, no 147
+        "relevantes_recuperados": len(relevantes_recuperados),
+        "documentos_relevantes_no_recuperados": list(docs_relevantes - docs_recuperados),
     }
